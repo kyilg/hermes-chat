@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>UI改修モック（ヘッダー縮小＋ChatGPT風コンポーザー）</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1b2337; --border:#242e45;
+    --accent:#10a37f; --accent2:#34d399; --text:#e8ecf4; --muted:#93a0b8;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#0b0e16; color:var(--text);
+    font-family:-apple-system,"Segoe UI","Noto Sans JP",Roboto,sans-serif;
+    display:flex; gap:16px; flex-wrap:wrap; justify-content:center; padding:14px; }
+  .frame .cap { font-size:12px; color:var(--muted); margin:2px 0 6px 4px; }
+  .wrap { width:340px; height:600px; border:1px solid var(--border);
+    border-radius:18px; overflow:hidden; background:var(--bg);
+    display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,.5);
+    position:relative; }
+  /* compact fixed header */
+  .topbar { position:sticky; top:0; z-index:5; display:flex; align-items:center;
+    gap:6px; padding:6px 10px; background:var(--panel); border-bottom:1px solid var(--border); }
+  .lb { width:20px; height:20px; border-radius:6px; display:grid; place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#04130e;
+    font-weight:800; font-size:11px; }
+  .title { font-weight:700; font-size:14px; flex:1; }
+  .hb { width:30px; height:30px; border-radius:8px; background:var(--panel2);
+    border:1px solid var(--border); color:var(--text); display:grid; place-items:center;
+    font-size:13px; }
+  .msgs { flex:1; padding:12px; display:flex; flex-direction:column; gap:10px; }
+  .row { display:flex; }
+  .row.user { justify-content:flex-end; }
+  .bubble { max-width:84%; min-width:0; padding:8px 12px; border-radius:14px;
+    font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+  .bubble.user { background:#1e3a5f; border-bottom-right-radius:5px; }
+  .bubble.ass { background:var(--panel2); border:1px solid var(--border);
+    border-bottom-left-radius:5px; }
+  .bimg { width:100%; max-height:220px; object-fit:cover; border-radius:10px;
+    border:1px solid var(--border); margin-bottom:6px; display:block; }
+  .composer { border-top:1px solid var(--border); background:var(--panel);
+    padding:8px 10px 10px; display:flex; flex-direction:column; gap:8px; }
+  .atchip { display:flex; gap:8px; align-items:center; background:var(--panel2);
+    border:1px solid var(--border); border-radius:10px; padding:5px 8px; }
+  .at { width:26px; height:26px; border-radius:6px; background:
+      repeating-conic-gradient(#2a3652 0% 25%, #1c2640 0% 50%) 0 0/10px 10px; }
+  .atn { font-size:11.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .atx { color:var(--muted); font-size:13px; background:none; border:none; }
+  .irow { display:flex; gap:6px; align-items:flex-end; }
+  .plus { width:34px; height:34px; border-radius:10px; background:var(--panel2);
+    border:1px solid var(--border); color:var(--text); font-size:16px; display:grid; place-items:center; }
+  .field { flex:1; min-height:34px; background:var(--panel2); border:1px solid var(--border);
+    border-radius:11px; display:flex; align-items:center; padding:0 10px; font-size:12px;
+    color:var(--muted); }
+  .mic { width:34px; height:34px; border-radius:10px; background:var(--panel2);
+    border:1px solid var(--border); display:grid; place-items:center; font-size:14px; }
+  .send { width:34px; height:34px; border-radius:10px; background:var(--accent);
+    display:grid; place-items:center; color:#04130e; font-size:13px; }
+  .menu { position:absolute; bottom:68px; left:10px; background:var(--panel);
+    border:1px solid var(--border); border-radius:12px; padding:6px; z-index:8;
+    display:flex; flex-direction:column; gap:2px; box-shadow:0 8px 30px rgba(0,0,0,.5); }
+  .mi { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px;
+    font-size:13px; }
+  .mi:hover { background:var(--panel2); }
+  .memo { font-size:10.5px; color:var(--muted); text-align:center; }
+</style>
+</head>
+<body>
+  <!-- State A: compact header + ChatGPT-style composer (closed) -->
+  <div class="frame">
+    <p class="cap">① 改修後: コンパクト固定ヘッダー（Hアイコン縮小）＋ ChatGPT風入力欄（＋メニュー・🎤）</p>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="lb">H</div><div class="title">Hermes Chat</div>
+        <div class="hb">≡</div><div class="hb">＋</div><div class="hb">⚙</div>
+      </div>
+      <div class="msgs">
+        <div class="row user"><div class="bubble user"><img class="bimg" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3MjAiIGhlaWdodD0iNDAwIj48cmVjdCB3aWR0aD0iNzIwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzE5MjIzNCIvPjxjaXJjbGUgY3g9IjM2MCIgY3k9IjIwMCIgcj0iMTQwIiBmaWxsPSIjMTA5MjY2Ii8+PHBvbHlsaW5lIHBvaW50cz0iMjgwLDI0MCAzNDAsMTUwIDQ0MCwyNTAgNTIwLDEyMCA2MjAsMjgwIiBzdHJva2U9IiM1NTYwNzUiIHN0cm9rZS13aWR0aD0iMTgiIGZpbGw9Im5vbmUiLz48L3N2Zz4=" alt="" />
+          この写真の構図を説明して</div></div>
+        <div class="row"><div class="bubble ass">山の稜線を強調した構図ですね。…（視覚対応モデル時）</div></div>
+      </div>
+      <div class="composer">
+        <div class="atchip"><div class="at"></div><div class="atn">IMG_20260912_1520.jpg（480KB・圧縮済み）</div><button class="atx">✕</button></div>
+        <div class="irow">
+          <div class="plus">＋</div>
+          <div class="field">メッセージを入力（＋で画像・カメラ）</div>
+          <div class="mic">🎤</div>
+          <div class="send">➤</div>
+        </div>
+        <div class="memo">＋メニュー: 写真を選択 / カメラで撮影</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- State B: plus menu open -->
+  <div class="frame">
+    <p class="cap">② ＋ タップ後（ChatGPT風ボトムメニュー）</p>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="lb">H</div><div class="title">Hermes Chat</div>
+        <div class="hb">≡</div><div class="hb">＋</div><div class="hb">⚙</div>
+      </div>
+      <div class="msgs">
+        <div class="row"><div class="bubble ass">何を添付しますか？</div></div>
+      </div>
+      <div class="menu">
+        <div class="mi">🖼 写真を選択（ギャラリー）</div>
+        <div class="mi">📷 カメラで撮影</div>
+        <div class="mi">📄 ファイル（現在は画像のみ対応）</div>
+      </div>
+      <div class="composer">
+        <div class="irow">
+          <div class="plus">＋</div>
+          <div class="field">メッセージを入力</div>
+          <div class="mic">🎤</div>
+          <div class="send">➤</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

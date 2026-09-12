@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>履歴モックアップ（2状態）</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1b2337; --border:#242e45;
+    --accent:#10a37f; --accent2:#34d399; --text:#e8ecf4; --muted:#93a0b8;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,"Segoe UI","Noto Sans JP",Roboto,sans-serif; }
+  .cols { display:flex; gap:16px; flex-wrap:wrap; padding:14px;
+    justify-content:center; align-items:flex-start; }
+  .frame { text-align:left; }
+  .frame .cap { font-size:12px; color:var(--muted); margin:0 0 6px 4px; }
+  .wrap { width:330px; height:600px; border:1px solid var(--border);
+    border-radius:18px; overflow:hidden; position:relative; display:flex;
+    flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,.5);
+    background:var(--bg); }
+  .topbar { display:flex; align-items:center; gap:8px; padding:10px 12px;
+    background:var(--panel); border-bottom:1px solid var(--border); }
+  .menu { width:32px; height:32px; border-radius:9px; background:var(--panel2);
+    border:1px solid var(--border); color:var(--text); font-size:15px;
+    display:grid; place-items:center; cursor:pointer; }
+  .logo { width:28px; height:28px; border-radius:8px; display:grid; place-items:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#04130e;
+    font-weight:800; font-size:14px; }
+  .title { font-weight:700; font-size:14px; flex:1; white-space:nowrap; overflow:hidden; }
+  .headbtns { display:flex; gap:6px; }
+  .hb { width:32px; height:32px; border-radius:9px; background:var(--panel2);
+    border:1px solid var(--border); color:var(--text); display:grid; place-items:center;
+    font-size:14px; }
+  .chip { font-size:11px; color:var(--muted); background:var(--panel2);
+    border:1px solid var(--border); padding:3px 9px; border-radius:999px; display:none; }
+  .msgs { flex:1; padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .row { display:flex; }
+  .row.user { justify-content:flex-end; }
+  .b { max-width:85%; padding:8px 12px; border-radius:14px; font-size:13px; line-height:1.6; }
+  .b.user { background:#1e3a5f; border-bottom-right-radius:5px; }
+  .b.ass { background:var(--panel2); border:1px solid var(--border);
+    border-bottom-left-radius:5px; color:var(--muted); font-style:italic; }
+  .composer { display:flex; gap:8px; padding:10px 12px 14px; border-top:1px solid var(--border);
+    background:var(--panel); }
+  .field { flex:1; height:36px; border-radius:11px; background:var(--panel2);
+    border:1px solid var(--border); }
+  .send { width:36px; height:36px; border-radius:11px; background:var(--accent);
+    display:grid; place-items:center; color:#04130e; font-size:14px; }
+
+  /* state B: overlay stays visible */
+  .wrap.open .overlay { display:flex; }
+  .overlay { position:absolute; inset:0; background:rgba(6,9,16,.72);
+    backdrop-filter:blur(2px); display:none; flex-direction:column; }
+  .sheet { background:var(--bg); border-left:1px solid var(--border);
+    height:100%; display:flex; flex-direction:column; box-shadow:-8px 0 30px rgba(0,0,0,.45); }
+  .hd { display:flex; align-items:center; gap:8px; padding:14px 14px 10px;
+    border-bottom:1px solid var(--border); }
+  .hd h2 { margin:0; font-size:15px; flex:1; }
+  .x { width:30px; height:30px; border-radius:9px; background:var(--panel2);
+    border:1px solid var(--border); color:var(--text); }
+  .newbtn { margin:12px 14px 6px; padding:10px; background:transparent;
+    border:1px dashed var(--accent); color:var(--accent2); border-radius:12px;
+    font-size:13.5px; }
+  .list { flex:1; overflow:auto; padding:4px 10px 14px; display:flex;
+    flex-direction:column; gap:8px; }
+  .item { display:flex; align-items:center; gap:10px; background:var(--panel);
+    border:1px solid var(--border); border-radius:12px; padding:9px 11px; }
+  .item.active { border-color:var(--accent); }
+  .ic { width:32px; height:32px; border-radius:9px; background:var(--panel2);
+    display:grid; place-items:center; font-size:14px; flex:none; }
+  .it { flex:1; min-width:0; }
+  .it .t { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; }
+  .it .d { font-size:10.5px; color:var(--muted); margin-top:2px; }
+  .del { background:none; border:none; color:var(--muted); font-size:14px; }
+  .note { font-size:11px; color:var(--muted); text-align:center; padding:3px 0 10px; }
+</style>
+</head>
+<body>
+<div class="cols">
+  <!-- State A: default -->
+  <div class="frame">
+    <p class="cap">① 通常状態（≡ はヘッダー左上に常設）</p>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="menu">≡</div>
+        <div class="logo">H</div>
+        <div class="title">Hermes Chat</div>
+        <div class="headbtns"><div class="hb">＋</div><div class="hb">⚙</div></div>
+      </div>
+      <div class="msgs">
+        <div class="row user"><div class="b user">メールの下書きを書いて</div></div>
+        <div class="row"><div class="b ass">件名・本文の案です（省略表示のモック）…</div></div>
+      </div>
+      <div class="composer"><div class="field"></div><div class="send">➤</div></div>
+    </div>
+  </div>
+
+  <!-- State B: history open -->
+  <div class="frame">
+    <p class="cap">② ≡ タップ後（履歴シートが開く）</p>
+    <div class="wrap open">
+      <div class="topbar">
+        <div class="menu">≡</div>
+        <div class="logo">H</div>
+        <div class="title">Hermes Chat</div>
+        <div class="headbtns"><div class="hb">＋</div><div class="hb">⚙</div></div>
+      </div>
+      <div class="msgs">
+        <div class="row user"><div class="b user">メールの下書きを書いて</div></div>
+        <div class="row"><div class="b ass">件名・本文の案です（省略表示のモック）…</div></div>
+      </div>
+      <div class="composer"><div class="field"></div><div class="send">➤</div></div>
+      <div class="overlay">
+        <div class="sheet">
+          <div class="hd"><h2>履歴</h2><button class="x">✕</button></div>
+          <button class="newbtn">＋ 新しいチャット</button>
+          <div class="list">
+            <div class="item active">
+              <div class="ic">📧</div>
+              <div class="it"><div class="t">メールの下書きを書いて</div><div class="d">今 · 4ターン</div></div>
+              <button class="del">🗑</button>
+            </div>
+            <div class="item">
+              <div class="ic">💻</div>
+              <div class="it"><div class="t">Pythonでスクレイピングのコードを書いて</div><div class="d">今日 09:12 · 12ターン</div></div>
+              <button class="del">🗑</button>
+            </div>
+            <div class="item">
+              <div class="ic">🗓</div>
+              <div class="it"><div class="t">明日の予定を整理して</div><div class="d">昨日 · 6ターン</div></div>
+              <button class="del">🗑</button>
+            </div>
+          </div>
+          <div class="note">スマホ内に保存（最大30件・自動）</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

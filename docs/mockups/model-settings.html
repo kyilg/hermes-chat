@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>モデル選択（通常/画像）設定モック</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1b2337; --border:#242e45;
+    --accent:#10a37f; --text:#e8ecf4; --muted:#93a0b8; --danger:#ef4444;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#0b0e16; color:var(--text);
+    font-family:-apple-system,"Segoe UI","Noto Sans JP",Roboto,sans-serif;
+    display:flex; gap:16px; flex-wrap:wrap; justify-content:center; padding:14px; }
+  .frame { width:360px; }
+  .cap { font-size:12px; color:var(--muted); margin:2px 0 6px 4px; }
+  .phone { position:relative; width:360px; height:640px; border:1px solid var(--border);
+    border-radius:20px; overflow:hidden; background:var(--bg);
+    display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,.5); }
+  .topbar { display:flex; align-items:center; gap:6px; padding:6px 10px;
+    padding-top:max(6px, env(safe-area-inset-top)); background:var(--panel);
+    border-bottom:1px solid var(--border); }
+  .lb { width:20px; height:20px; border-radius:6px; display:grid; place-items:center;
+    background:linear-gradient(135deg,var(--accent),#34d399); color:#04130e; font-weight:800; font-size:11px; }
+  .title { font-weight:700; font-size:15px; flex:1; }
+  .hb { width:30px; height:30px; border-radius:8px; background:var(--panel2);
+    border:1px solid var(--border); color:var(--text); display:grid; place-items:center; font-size:13px; }
+  .dim { opacity:.35; }
+  .chat { flex:1; padding:12px; display:flex; flex-direction:column; gap:10px; }
+  .row { display:flex; }
+  .row.user { justify-content:flex-end; }
+  .bubble { max-width:84%; padding:8px 12px; border-radius:14px; font-size:13px; line-height:1.6; }
+  .bubble.ass { background:var(--panel2); border:1px solid var(--border); }
+  .composer { border-top:1px solid var(--border); background:var(--panel);
+    padding:8px 10px 10px; display:flex; flex-direction:column; gap:8px; }
+  .irow { display:flex; gap:6px; align-items:flex-end; }
+  .plus { width:34px; height:34px; border-radius:10px; background:var(--panel2);
+    border:1px solid var(--border); display:grid; place-items:center; font-size:16px; }
+  .field { flex:1; min-height:34px; background:var(--panel2); border:1px solid var(--border);
+    border-radius:11px; display:flex; align-items:center; padding:0 10px; font-size:12px; color:var(--muted); }
+  .mic { width:34px; height:34px; border-radius:10px; background:var(--panel2);
+    border:1px solid var(--border); display:grid; place-items:center; font-size:14px; }
+  .send { width:34px; height:34px; border-radius:10px; background:var(--accent);
+    display:grid; place-items:center; color:#04130e; font-size:13px; }
+  /* settings sheet */
+  .sheet { position:absolute; inset:0; background:rgba(4,7,14,.6); display:flex; align-items:flex-end; z-index:5; }
+  .sheetbody { width:100%; background:var(--panel); border-radius:18px 18px 0 0;
+    border-top:1px solid var(--border); padding:14px 16px 20px;
+    padding-bottom:max(20px, env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:12px; }
+  .sheettitle { font-weight:700; font-size:15px; text-align:center; }
+  .mrow { display:flex; flex-direction:column; gap:6px; }
+  .mlabel { font-size:12.5px; color:var(--muted); }
+  .msel { width:100%; background:var(--panel2); border:1px solid var(--border);
+    color:var(--text); border-radius:10px; padding:10px 12px; font-size:14px;
+    font-family:inherit; appearance:none; }
+  .hint { font-size:11px; color:var(--muted); line-height:1.5; }
+  .tag { display:inline-block; font-size:10px; padding:1px 7px; border-radius:999px;
+    background:rgba(16,163,127,.16); color:var(--accent); border:1px solid rgba(16,163,127,.4); margin-left:6px; }
+  .btnrow { display:flex; gap:8px; margin-top:4px; }
+  .btn { flex:1; border-radius:11px; border:1px solid var(--border); padding:11px;
+    font-size:14px; text-align:center; color:var(--text); background:var(--panel2); }
+  .btn.primary { background:var(--accent); color:#04130e; border:none; font-weight:700; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <p class="cap">⚙設定シート: 「通常モデル」と「画像モデル」を個別選択</p>
+    <div class="phone">
+      <div class="topbar">
+        <div class="lb">H</div><div class="title">Hermes Chat　<span style="color:var(--muted);font-weight:400;font-size:12px">待機中</span></div>
+        <div class="hb dim">≡</div><div class="hb dim">＋</div><div class="hb">⚙</div>
+      </div>
+      <div class="chat">
+        <div class="row"><div class="bubble ass">設定を開きました。モデルを選んでください。</div></div>
+      </div>
+      <div class="composer"><div class="irow">
+        <div class="plus dim">＋</div><div class="field dim">メッセージを入力</div><div class="mic dim">🎤</div><div class="send dim">➤</div>
+      </div></div>
+      <div class="sheet">
+        <div class="sheetbody">
+          <div class="sheettitle">設定</div>
+          <div class="mrow">
+            <div class="mlabel">通常モデル（チャット・テキストターン）</div>
+            <select class="msel">
+              <option>deepseek-v4-flash（現在）</option>
+              <option>deepseek-v4-pro</option>
+              <option>minimax-m3</option>
+              <option>qwen3.8-flash</option>
+            </select>
+          </div>
+          <div class="mrow">
+            <div class="mlabel">画像モデル（画像を送ったターンで使用）<span class="tag">推奨: minimax-m3</span></div>
+            <select class="msel">
+              <option>minimax-m3（現在）</option>
+              <option>deepseek-v4-flash-vision-exp</option>
+              <option>qwen3.8-max</option>
+              <option>qwen3.7-max</option>
+              <option>mimo-v2-omni</option>
+            </select>
+            <div class="hint">※画像入力に対応したモデルのみ表示します。画像ターンはこのモデルが画像を直接解釈します（通常モデルは文脈・回答用）。</div>
+          </div>
+          <div class="btnrow">
+            <div class="btn">キャンセル</div>
+            <div class="btn primary">保存</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
