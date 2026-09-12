@@ -116,6 +116,37 @@ cd supervisor && python supervisor.py        # 127.0.0.1:8642 で待受
 `scripts/hermes-gateway-termux.sh` を `HERMES_START_CMD` にすると、
 Hermes 稼働中のみ `termux-wake-lock` を保持し、停止時に解除する（待機中はディープスリープ維持）。
 
+## PCからの遠隔セットアップ（任意）
+
+スマホの画面操作をせず、PCのターミナルから上の手順1〜11を実行する方法。
+「adb（USB）→ポート転送→Termux内sshd」の順に接続し、以降の全コマンドを `ssh` 経由で実行する。
+
+1. PC側: [platform-tools](https://developer.android.com/tools/releases/platform-tools) の `adb` を導入し、実機のUSBデバッグを有効化（設定→開発者向けオプション→USBデバッグ）。`adb devices` で認識を確認
+2. スマホ側で一度だけ Termux を起動し、SSHサーバを立てる:
+   ```
+   pkg install openssh
+   # PCの公開鍵 (~/.ssh/id_ed25519.pub 等) を ~/.ssh/authorized_keys に登録
+   #   鍵の受け渡しは `scp` か、`termux-setup-storage` 後に `~/storage/shared/` 経由
+   sshd
+   ```
+3. PC側でポート転送を張って接続:
+   ```
+   adb forward tcp:8022 tcp:8022
+   ssh -p 8022 -i ~/.ssh/id_ed25519 127.0.0.1
+   ```
+4. 以後、READMEの手順2〜11のコマンドを `ssh -p 8022 127.0.0.1 "<コマンド>"` の形で実行する。例:
+   ```
+   ssh -p 8022 127.0.0.1 "curl -fsSL <aptリポジトリスクリプト> | bash && pkg update && pkg install hermes-agent"
+   ```
+5. APK（F-Droid版Termux等）はPCから: `adb install -r ./com.termux_<ver>.apk`
+   （Xiaomi等は事前に「USB経由のインストール」を許可。インストール時の確認ダイアログはスマホ画面でのタップが必要な場合がある）
+6. ファイル配備は `scp -P 8022` または tar の転送で。
+7. バッテリー除外などスマホ設定コマンドも `adb shell dumpsys deviceidle whitelist +com.termux` のようにPCから実行できる
+
+補足:
+- Termux の **RUN_COMMAND（外部アプリからのコマンド実行）は adb からは権限を渡せない**（F-Droid版では動かない）。遠隔操作は必ず **sshd + adb forward** を使う
+- スマホを再起動した場合は USB を繋ぎ直し、`adb forward` を張り直せば再度操作できる（ホーム画面の Termux:Widget があればPC不要）
+
 ## 運用上の注意
 
 - **GUI設定**: チャットPWAの⚙ →「Hermes設定GUIを開く」で `http://127.0.0.1:9119`（Hermes公式ダッシュボード）を開くと、APIキー・モデル・config.yaml をブラウザから編集できる（loopback・ログイン不要）。`scripts/run-supervisor-termux.sh` がサーバ起動時に合わせて起動する
