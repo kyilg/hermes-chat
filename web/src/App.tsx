@@ -33,6 +33,7 @@ interface HFolder {
 
 const LS_MODEL = "hcModel";
 const LS_VISION = "hcVisionModel";
+const LS_REASONING = "hcReasoning";
 const LS_TOOLS = "hcToolProgress";
 const LS_CONVS = "hcConversations";
 const LS_ATTACH = "hcAttach";
@@ -165,6 +166,11 @@ export default function App() {
   const [visionModel, setVisionModel] = useState<string>(
     () => localStorage.getItem(LS_VISION) || "minimax-m3"
   );
+  // Thinking/Think level: per-request model_options.reasoning_effort.
+  // "default" = provider default; "none" disables thinking entirely.
+  const [reasoning, setReasoning] = useState<string>(
+    () => localStorage.getItem(LS_REASONING) || "low"
+  );
   const [convList, setConvList] = useState<HFolder[]>([]);
   const [attach, setAttach] = useState<{ name: string; dataUrl: string } | null>(null);
   const [recog, setRecog] = useState(false);
@@ -181,9 +187,19 @@ export default function App() {
   const messagesRef = useRef<Message[]>([]);
   const recogRef = useRef<SpeechRecognitionLike | null>(null);
 
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
+  // Keep messagesRef in lock-step with messages state. React defers updater
+  // FUNCTION execution to render time, so writing the ref inside the updater
+  // still races async commits (stored EMPTY assistant messages). Instead,
+  // compute from the ref AT CALL TIME and pass values — ref updates
+  // synchronously, no render dependency.
+  const applyMessages = useCallback(
+    (updater: (prev: Message[]) => Message[]) => {
+      const next = updater(messagesRef.current);
+      messagesRef.current = next;
+      setMessages(next);
+    },
+    []
+  );
 
   const saveConvs = useCallback(
     (updater: (prev: HFolder[]) => HFolder[]) => {
@@ -312,13 +328,13 @@ export default function App() {
         image: attachCopy?.dataUrl,
       };
       const assistantMsg: Message = { id: crypto.randomUUID(), role: "assistant", content: "" };
-      setMessages((m) => [...m, userMsg, assistantMsg]);
+      applyMessages((m) => [...m, userMsg, assistantMsg]);
       setTools([]);
       setBusy(true);
       setBusyKind(attachCopy ? "image" : "text");
 
       const patchAssistant = (fn: (m: Message) => Message) =>
-        setMessages((m) => m.map((x) => (x.id === assistantMsg.id ? fn(x) : x)));
+        applyMessages((m) => m.map((x) => (x.id === assistantMsg.id ? fn(x) : x)));
 
       if (attachCopy) {
         // Image turns: /v1/chat/completions (runs rejects content arrays),
@@ -350,7 +366,8 @@ export default function App() {
             },
             visionModel || "minimax-m3",
             controller.signal,
-            convId
+            convId,
+            reasoning
           );
         } catch (err) {
           const msg = (err as Error).message || String(err);
@@ -368,7 +385,12 @@ export default function App() {
       const controller = new AbortController();
       aborter.current = controller;
       try {
-        const run = await api.createRun(text, convId, preferredModel || undefined);
+        const run = await api.createRun(
+            text,
+            convId,
+            preferredModel || undefined,
+            reasoning
+          );
         const runId = run.run_id;
         let streamed = "";
 
@@ -431,7 +453,7 @@ export default function App() {
         );
       } catch (err) {
         const msg = (err as Error).message || String(err);
-        setMessages((m) =>
+        applyMessages((m) =>
           m.map((x) =>
             x.id === assistantMsg.id
               ? {
@@ -463,7 +485,7 @@ export default function App() {
         inputRef.current?.focus();
       }
     },
-    [input, busy, convId, attach, preferredModel, visionModel, commitConversation]
+    [input, busy, convId, attach, preferredModel, visionModel, reasoning, commitConversation]
   );
 
   const cancel = useCallback(() => {
@@ -474,24 +496,24 @@ export default function App() {
 
   const newChat = useCallback(() => {
     commitConversation();
-    setMessages([]);
+    applyMessages(() => []);
     setConvId(newConversationId());
     setError(null);
     setShowHistory(false);
-  }, [commitConversation]);
+  }, [commitConversation, applyMessages]);
 
   const openConversation = useCallback(
     (id: string) => {
       commitConversation();
       const c = convList.find((x) => x.id === id);
       if (!c) return;
-      setMessages(
+      applyMessages(() =>
         c.messages.map((m) => ({ ...m, content: m.content, error: m.error }))
       );
       setConvId(id);
       setShowHistory(false);
     },
-    [commitConversation, convList]
+    [commitConversation, convList, applyMessages]
   );
 
   const deleteConversation = useCallback(
@@ -499,11 +521,11 @@ export default function App() {
       if (!window.confirm("この会話履歴を削除しますか？（Hermes側の保存には影響しません）")) return;
       saveConvs((prev) => prev.filter((c) => c.id !== id));
       if (id === convId) {
-        setMessages([]);
+        applyMessages(() => []);
         setConvId(newConversationId());
       }
     },
-    [convId, saveConvs]
+    [convId, saveConvs, applyMessages]
   );
 
   // --- attachment ---------------------------------------------------------
@@ -600,6 +622,10 @@ export default function App() {
   const changeVisionModel = (v: string) => {
     setVisionModel(v);
     localStorage.setItem(LS_VISION, v);
+  };
+  const changeReasoning = (v: string) => {
+    setReasoning(v);
+    localStorage.setItem(LS_REASONING, v);
   };
   const toggleTools = () => {
     setShowTools((v) => {
@@ -736,6 +762,19 @@ export default function App() {
             </select>
             <small>
               画像入力に対応済みのモデルのみ表示します。テキストターンは上の通常モデルが担当します。
+            </small>
+          </label>
+          <label>
+            思考レベル（Think・応答速度を調整）
+            <select value={reasoning} onChange={(e) => changeReasoning(e.target.value)}>
+              <option value="default">既定（OpenCode Go標準）</option>
+              <option value="none">なし（最速・単純な質問向き）</option>
+              <option value="low">低（初期値・高速＆高品質のバランス）</option>
+              <option value="medium">標準（中）</option>
+              <option value="high">高（じっくり・複雑な課題向き・遅い）</option>
+            </select>
+            <small>
+              低やなしにすると応答が速くなります（複雑な課題の品質は下がる場合があります）。画像ターンにも適用されます。
             </small>
           </label>
           <label className="check">

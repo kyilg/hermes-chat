@@ -1,5 +1,5 @@
 /* Hermes Chat service worker: cache built assets, never cache API traffic. */
-const CACHE = "hermes-chat-v7";
+const CACHE = "hermes-chat-v10";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();

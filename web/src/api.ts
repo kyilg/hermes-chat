@@ -93,14 +93,34 @@ export const api = {
   start: () => fetch("/api/supervisor/start", { method: "POST" }).then((r) => json<SupervisorStatus>(r)),
   stop: () => fetch("/api/supervisor/stop", { method: "POST" }).then((r) => json<SupervisorStatus>(r)),
 
-  createRun: (input: string, conversation: string, model?: string) =>
+  createRun: (
+    input: string,
+    conversation: string,
+    model?: string,
+    reasoningEffort?: string
+  ) =>
     fetch("/v1/runs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(
         model
-          ? { input, session_id: conversation, model }
-          : { input, session_id: conversation }
+          ? {
+              input,
+              session_id: conversation,
+              model,
+              model_options:
+                reasoningEffort && reasoningEffort !== "default"
+                  ? { reasoning_effort: reasoningEffort }
+                  : undefined,
+            }
+          : {
+              input,
+              session_id: conversation,
+              model_options:
+                reasoningEffort && reasoningEffort !== "default"
+                  ? { reasoning_effort: reasoningEffort }
+                  : undefined,
+            }
       ),
     }).then((r) => json<RunCreated>(r)),
 
@@ -131,7 +151,8 @@ export const api = {
     onError: (err: Error) => void,
     model?: string,
     signal?: AbortSignal,
-    sessionId?: string
+    sessionId?: string,
+    reasoningEffort?: string
   ): Promise<void> =>
     (async () => {
       try {
@@ -150,6 +171,10 @@ export const api = {
             messages,
             stream: true,
             max_tokens: 1200,
+            model_options:
+              reasoningEffort && reasoningEffort !== "default"
+                ? { reasoning_effort: reasoningEffort }
+                : undefined,
           }),
           signal,
         });

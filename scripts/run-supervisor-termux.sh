@@ -5,6 +5,11 @@ cd "$(dirname "$0")/.."
 # Phone default: hold the wake lock only while Hermes runs.
 export HERMES_START_CMD="${HERMES_START_CMD:-bash scripts/hermes-gateway-termux.sh}"
 export HERMES_API_URL="${HERMES_API_URL:-http://127.0.0.1:8643}"
+# Restore remote control too (adb forward -> sshd) in case Android killed Termux.
+if ! pgrep -x sshd >/dev/null 2>&1; then
+  sshd >/dev/null 2>&1
+  echo "sshd restarted"
+fi
 if curl -s -m 2 http://127.0.0.1:8642/api/supervisor/status >/dev/null 2>&1; then
   echo "supervisor already running"
   exit 0
